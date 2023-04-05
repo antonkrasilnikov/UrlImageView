@@ -35,6 +35,14 @@ open class ImageLoader {
     open class func remove(listener: ImageLoaderListener, url: String? = nil) {
         loader.remove(listener: listener, url: url)
     }
+
+    /// add image's links to loading queue
+    /// - Parameter urls: image's links to load
+    /// - Parameter timeout: timeout
+    /// - Parameter completion: callback that calls in load completion or timeout
+    open class func load(urls: [String], timeout: TimeInterval? = nil, completion: @escaping ([String:UIImage]) -> Void) {
+        UrlImageLoader.load(urls: urls, timeout: timeout, completion: completion)
+    }
     
     /// get image from RAM cache
     /// - Parameter url: image link
