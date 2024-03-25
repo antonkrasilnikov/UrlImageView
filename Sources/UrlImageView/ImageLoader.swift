@@ -60,7 +60,14 @@ open class ImageLoader {
         }
         return nil
     }
-    
+
+    /// check if image loaded
+    /// - Parameter url: image link
+    /// - Returns: bool
+    open class func isImageLoaded(url: String) -> Bool {
+        loader.isImageLoaded(url: url)
+    }
+
     // MARK: Internal
     
     struct Values {
