@@ -68,6 +68,17 @@ open class ImageLoader {
         loader.isImageLoaded(url: url)
     }
 
+    /// clear cached image
+    /// - Parameter url: image link
+    open class func clearCache(url: String) {
+        loader.clearCached(url: url)
+    }
+
+    /// clear all cache
+    open class func clearCache() {
+        loader.clearCache()
+    }
+
     // MARK: Internal
     
     struct Values {
@@ -301,6 +312,20 @@ open class ImageLoader {
 
     func cachePath(for url: String) -> String {
         Values.imagesDirectoryPath + "/\((url as NSString).hash)"
+    }
+
+    func clearCached(url: String) {
+        cachedImages.removeAll(where: { $0.url == url })
+        let path = cachePath(for: url)
+        guard FileManager.default.fileExists(atPath: path) else { return; }
+        try? FileManager.default.removeItem(atPath: path)
+    }
+
+    func clearCache() {
+        cachedImages.removeAll()
+        _cacheSize = 0
+        guard FileManager.default.fileExists(atPath: Values.imagesDirectoryPath) else { return }
+        try? FileManager.default.removeItem(atPath: Values.imagesDirectoryPath)
     }
 }
 
