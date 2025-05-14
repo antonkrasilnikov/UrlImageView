@@ -169,7 +169,12 @@ open class ImageLoader {
     }
     
     func load(url: String, for listener: ImageLoaderListener) {
-        
+
+        guard URL(string: url) != nil else {
+            listener.imageDidFail(url: url)
+            return
+        }
+
         // add listener
         add(listener: listener, url: url)
         
