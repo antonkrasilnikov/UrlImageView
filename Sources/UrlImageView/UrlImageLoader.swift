@@ -12,6 +12,7 @@ class UrlImageLoader: NSObject {
     }
 
     private var imageDct: [String:UIImage] = [:]
+    private var failedUrls: [String] = []
     private var urls: [String] = []
     private var completion: (([String:UIImage]) -> Void)? {
         didSet {
@@ -75,7 +76,7 @@ class UrlImageLoader: NSObject {
         urls.forEach({
             if let image = imageDct[$0] {
                 dct[$0] = image
-            }else{
+            }else if !failedUrls.contains($0) {
                 isLoaded = isLoaded && false
             }
         })
@@ -114,6 +115,10 @@ extension UrlImageLoader: ImageLoaderListener {
         imageDct[url] = image
         _notifyIfNeeded()
     }
-    func imageDidFail(url: String) {}
+    func imageDidFail(url: String) {
+        ImageLoader.remove(listener: self, url: url)
+        failedUrls.append(url)
+        _notifyIfNeeded()
+    }
     func imageDidStartLoading(url: String) {}
 }
