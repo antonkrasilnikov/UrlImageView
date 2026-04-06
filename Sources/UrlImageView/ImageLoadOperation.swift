@@ -6,14 +6,9 @@
 
 import Foundation
 
-class ImageLoadOperation: Operation {
-
+class ImageLoadOperation: Operation, @unchecked Sendable {
     public typealias AsyncBlock = (@escaping () -> Void) -> Void
-
-    open override var isAsynchronous: Bool {
-        return true
-    }
-
+    open override var isAsynchronous: Bool { true }
     var block: AsyncBlock
 
     public init(block: @escaping AsyncBlock) {
@@ -29,10 +24,7 @@ class ImageLoadOperation: Operation {
             _isFinished = newValue
             didChangeValue(forKey: "isFinished")
         }
-
-        get {
-            return _isFinished
-        }
+        get { _isFinished }
     }
 
     var _isExecuting: Bool = false
@@ -43,19 +35,14 @@ class ImageLoadOperation: Operation {
             _isExecuting = newValue
             didChangeValue(forKey: "isExecuting")
         }
-
-        get {
-            return _isExecuting
-        }
+        get { _isExecuting }
     }
 
     open override func start() {
         isExecuting = true
-
         block{
             self.isExecuting = false
             self.isFinished = true
         }
-
     }
 }

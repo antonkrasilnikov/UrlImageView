@@ -20,7 +20,14 @@ class CachedImage: Equatable {
         self.image = image
         self.length = length
     }
-    
+
+    init?(url: String, data: Data) {
+        guard let image = UIImage(data: data) else { return nil }
+        self.url = url
+        self.image = image
+        self.length = data.count
+    }
+
     static func == (lhs: CachedImage, rhs: CachedImage) -> Bool {
         lhs.url == rhs.url
     }

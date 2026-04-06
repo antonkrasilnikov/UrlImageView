@@ -39,27 +39,20 @@ class UrlImageLoader: NSObject {
     }
 
     private func isImageCashed(for url: String) -> Bool {
-
-        guard imageDct[url] == nil else {
-            return true
-        }
-
+        guard imageDct[url] == nil else { return true }
         if let image = ImageLoader.loadedImage(url: url) {
             imageDct[url] = image
             return true
         }
-
         return false
     }
 
     private func load() {
-
         for url in urls {
             if !isImageCashed(for: url) {
                 ImageLoader.load(url: url, for: self)
             }
         }
-
         _notifyIfNeeded()
     }
 
@@ -70,9 +63,7 @@ class UrlImageLoader: NSObject {
 
     private func loadedImages() -> (Bool, [String:UIImage]) {
         var dct: [String:UIImage] = [:]
-
         var isLoaded = true
-
         urls.forEach({
             if let image = imageDct[$0] {
                 dct[$0] = image
@@ -80,18 +71,13 @@ class UrlImageLoader: NSObject {
                 isLoaded = isLoaded && false
             }
         })
-
         return (isLoaded,dct)
     }
 
     @objc private func timerAction() {
-
         resetTimoutTimer()
-
         ImageLoader.remove(listener: self)
-
         let (_, dct) = loadedImages()
-
         if let completion = completion {
             self.completion = nil
             completion(dct)
@@ -100,7 +86,6 @@ class UrlImageLoader: NSObject {
 
     private func _notifyIfNeeded() {
         let (isLoaded, dct) = loadedImages()
-
         if isLoaded, let completion = completion {
             self.completion = nil
             resetTimoutTimer()
@@ -115,10 +100,12 @@ extension UrlImageLoader: ImageLoaderListener {
         imageDct[url] = image
         _notifyIfNeeded()
     }
+
     func imageDidFail(url: String) {
         ImageLoader.remove(listener: self, url: url)
         failedUrls.append(url)
         _notifyIfNeeded()
     }
+
     func imageDidStartLoading(url: String) {}
 }

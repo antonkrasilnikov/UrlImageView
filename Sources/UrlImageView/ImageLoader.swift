@@ -123,7 +123,6 @@ open class ImageLoader {
     
     func add(listener: ImageLoaderListener, url: String) {
         guard url.count > 0 else { return }
-        
         if let urlListeners = listeners[url] {
             if !urlListeners.contains(listener) {
                 listeners[url]?.append(listener)
@@ -146,14 +145,11 @@ open class ImageLoader {
     }
     
     func cachedImage(for url: String) -> CachedImage? {
-        if let image = cachedImages.first(where: { $0.url == url }) {
-            // move requested image to top of cache
-            cachedImages.removeAll(where: { $0 == image })
-            cachedImages.insert(image, at: 0)
-            
-            return image
-        }
-        return nil
+        guard let image = cachedImages.first(where: { $0.url == url }) else { return nil }
+        // move requested image to top of cache
+        cachedImages.removeAll(where: { $0 == image })
+        cachedImages.insert(image, at: 0)
+        return image
     }
     
     func notifyImageDidLoad(cachedImage: CachedImage) {
@@ -194,7 +190,6 @@ open class ImageLoader {
     }
     
     func taskUpdate() {
-        
         // hold image loading in case of max tasks count
         guard
             loadingImages.count < Values.MAX_LOADING_COUNT,
@@ -202,61 +197,51 @@ open class ImageLoader {
         else {
             return
         }
-        
         loadingImages.append(url)
         toLoadImages.removeAll(where: { $0 == url })
-        
-        let completion: (Data?) -> Void = { data in
-            
-            let cachedImage: CachedImage?
-            
-            if let data = data, let image = UIImage(data: data) {
-                cachedImage = .init(url: url, image: image, length: data.count)
+
+        let completion: (Data?, _ precreatedImage: UIImage?) -> Void = { data, precreatedImage in
+            let cachedImage: CachedImage? =
+            if let data, let image = precreatedImage ?? UIImage(data: data) {
+                CachedImage(url: url, image: image, length: data.count)
             }else{
-                cachedImage = nil
+                nil
             }
-            
             OperationQueue.main.addOperation { [weak self] in
-                
-                guard let self = self else { return }
-                
+                guard let self else { return }
                 self.loadingImages.removeAll(where: { $0 == url })
-                
                 if let cachedImage = cachedImage {
                     self.renewCache(with: cachedImage)
                     self.notifyImageDidLoad(cachedImage: cachedImage)
                 }else{
+                    self.clearCached(url: url) // clear cache in case if any corrupted data has been saved
                     self.notifyImageDidFail(url: url)
                 }
                 self.taskUpdate()
             }
-            
         }
-        
-        let operation: ImageLoadOperation
-        
+
         // check if image has been loaded and get it from storage, else start loading
+        let operation: ImageLoadOperation
         if isImageLoaded(url: url) {
             operation = .init(block: { finishCallback in
-                completion(self.loadCache(url: url))
+                completion(self.loadCache(url: url),nil)
                 finishCallback()
             })
         }else{
             operation = .init(block: { finishCallback in
                 self.load(url: url) { [weak self] data in
-                    
-                    guard let self = self else { finishCallback(); return }
-                    
-                    if let data = data {
-                        self.cache(data: data, url: url)
+                    defer { finishCallback() }
+                    guard let self else { return }
+                    guard let data, let image = UIImage(data: data) else {
+                        completion(nil,nil)
+                        return
                     }
-                    
-                    completion(data)
-                    finishCallback()
+                    self.cache(data: data, url: url)
+                    completion(data,image)
                 }
             })
         }
-        
         loaderQueue.addOperation(operation)
     }
     
@@ -266,7 +251,7 @@ open class ImageLoader {
     
     func renewCache(with cachedImage: CachedImage) {
         if !cachedImages.contains(cachedImage) {
-            // check if max cache's max size has reached and pop useless one
+            // check if cache's max size has reached and pop useless one
             if cachedImages.count > Values.MAX_IMAGE_CACHE_COUNT || _cacheSize > Values.MAX_CACHE_WEIGHT {
                 let imageToRemove = cachedImages.last!
                 _cacheSize -= imageToRemove.length
@@ -281,7 +266,6 @@ open class ImageLoader {
     }
     
     func cache(data: Data, url: String) {
-        
         if !FileManager.default.fileExists(atPath: Values.imagesDirectoryPath) {
             do {
                 try FileManager.default.createDirectory(at: URL(fileURLWithPath: Values.imagesDirectoryPath),
@@ -291,26 +275,18 @@ open class ImageLoader {
                 return
             }
         }
-        
         try? data.write(to: URL(fileURLWithPath: cachePath(for: url)))
     }
     
     func loadCache(url: String) -> Data? {
         let path = cachePath(for: url)
-        guard FileManager.default.fileExists(atPath: path) else {
-            return nil;
-        }
-        
+        guard FileManager.default.fileExists(atPath: path) else { return nil }
         return FileManager.default.contents(atPath: path)
     }
     
     func load(url: String, completion: @escaping (Data?) -> Void) {
-        
         guard let URL = URL(string: url) else { completion(nil); return }
-        
-        let request = URLRequest(url: URL)
-        
-        URLSession.shared.dataTask(with: request) { (data, _, _) in
+        URLSession.shared.dataTask(with: URLRequest(url: URL)) { (data, _, _) in
             completion(data)
         }.resume()
     }
@@ -346,24 +322,12 @@ extension NSPointerArray {
         removePointer(at: index)
     }
     
-    func remove(listener: AnyObject) {
-        if let index = allObjects.firstIndex(where: { obj in
-            if let obj = obj as? ImageLoaderListener, listener === obj {
-                return true
-            }
-            return false
-        }) {
-            removeListener(at: index)
-        }
+    func remove(listener: ImageLoaderListener) {
+        guard let index = allObjects.firstIndex(where: { ($0 as? ImageLoaderListener) === listener }) else { return }
+        removeListener(at: index)
     }
     
     func contains(_ listener: ImageLoaderListener) -> Bool {
-        allObjects.contains(where: { obj in
-            if let obj = obj as? ImageLoaderListener, listener === obj {
-                return true
-            }
-            return false
-        })
+        allObjects.contains(where: { ($0 as? ImageLoaderListener) === listener })
     }
-
 }

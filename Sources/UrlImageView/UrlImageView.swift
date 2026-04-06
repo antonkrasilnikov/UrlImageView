@@ -29,13 +29,11 @@ public class UrlImageView: UIImageView, ImageLoaderListener {
     /// image link
     public var url: String? {
         didSet {
-            
             guard oldValue != self.url else { return }
             if let oldValue = oldValue {
                 ImageLoader.remove(listener: self, url: oldValue)
             }
             guard let url = self.url else { image = nil; return }
-            
             if syncStorageLoad {
                 if let image = ImageLoader.cachedImage(url: url) {
                     self.image = image
@@ -46,19 +44,14 @@ public class UrlImageView: UIImageView, ImageLoaderListener {
                     return
                 }
             }
-            
             image = nil
             ImageLoader.load(url: url, for: self)
         }
     }
     
     public override var image: UIImage? {
-        set {
-            super.image = newValue ?? placeholder
-        }
-        get {
-            super.image
-        }
+        set { super.image = newValue ?? placeholder }
+        get { super.image }
     }
     
     deinit {
@@ -67,10 +60,7 @@ public class UrlImageView: UIImageView, ImageLoaderListener {
     
     public func imageDidLoad(url imageUrl: String, image: UIImage) {
         ImageLoader.remove(listener: self, url: imageUrl)
-        
         guard imageUrl == url else { return }
-        
         self.image = image
     }
-    
 }
