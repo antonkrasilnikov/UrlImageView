@@ -55,10 +55,8 @@ open class ImageLoader {
     /// - Parameter url: image link
     /// - Returns: image, can be nil
     open class func loadedImage(url: String) -> UIImage? {
-        if let data = loader.loadCache(url: url) {
-            return UIImage(data: data)
-        }
-        return nil
+        guard let data = loader.loadCache(url: url) else { return nil }
+        return UIImage(data: data)
     }
 
     /// check if image loaded
@@ -95,19 +93,19 @@ open class ImageLoader {
     
     static var loader = ImageLoader()
     
-    var listeners: [String:NSPointerArray] = [:]
-    
-    var cachedImages: [CachedImage] = []
-    var toLoadImages: [String] = []
-    var loadingImages: [String] = []
-    let loaderQueue: OperationQueue = {
+    private var listeners: [String:NSPointerArray] = [:]
+
+    private var cachedImages: [CachedImage] = []
+    private var toLoadImages: [String] = []
+    private var loadingImages: [String] = []
+    private let loaderQueue: OperationQueue = {
         $0.qualityOfService = .userInitiated
         $0.maxConcurrentOperationCount = Values.MAX_LOADING_COUNT
         return $0
     }(OperationQueue())
     
-    var _cacheSize = 0
-    
+    private var cacheSize: Int { cachedImages.reduce(0, { $0 + $1.length }) }
+
     init() {
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(memoryWarningAction),
@@ -116,12 +114,12 @@ open class ImageLoader {
     }
     
     @objc
+    private
     func memoryWarningAction() {
         cachedImages.removeAll()
-        _cacheSize = 0
     }
     
-    func add(listener: ImageLoaderListener, url: String) {
+    private func add(listener: ImageLoaderListener, url: String) {
         guard url.count > 0 else { return }
         if let urlListeners = listeners[url] {
             if !urlListeners.contains(listener) {
@@ -133,13 +131,13 @@ open class ImageLoader {
         }
     }
     
-    func remove(listener: ImageLoaderListener, url: String? = nil) {
+    private func remove(listener: ImageLoaderListener, url: String? = nil) {
         for url in (url != nil ? [url!] : Array(listeners.keys)) {
             listeners[url]?.remove(listener: listener)
         }
     }
 
-    func listeners(for url: String) -> [ImageLoaderListener] {
+    private func listeners(for url: String) -> [ImageLoaderListener] {
         listeners[url]?.compact()
         return listeners[url]?.allObjects.compactMap({ $0 as? ImageLoaderListener }) ?? []
     }
@@ -152,13 +150,13 @@ open class ImageLoader {
         return image
     }
     
-    func notifyImageDidLoad(cachedImage: CachedImage) {
+    private func notifyImageDidLoad(cachedImage: CachedImage) {
         let urlListeners = listeners(for: cachedImage.url)
         listeners[cachedImage.url] = NSPointerArray.weakObjects()
         urlListeners.forEach({ $0.imageDidLoad(url: cachedImage.url, image: cachedImage.image) })
     }
     
-    func notifyImageDidFail(url: String) {
+    private func notifyImageDidFail(url: String) {
         let urlListeners = listeners(for: url)
         listeners[url] = NSPointerArray.weakObjects()
         urlListeners.forEach({ $0.imageDidFail(url: url) })
@@ -189,7 +187,7 @@ open class ImageLoader {
         listener.imageDidStartLoading(url: url)
     }
     
-    func taskUpdate() {
+    private func taskUpdate() {
         // hold image loading in case of max tasks count
         guard
             loadingImages.count < Values.MAX_LOADING_COUNT,
@@ -249,23 +247,19 @@ open class ImageLoader {
         FileManager.default.fileExists(atPath: cachePath(for: url))
     }
     
-    func renewCache(with cachedImage: CachedImage) {
+    private func renewCache(with cachedImage: CachedImage) {
         if !cachedImages.contains(cachedImage) {
             // check if cache's max size has reached and pop useless one
-            if cachedImages.count > Values.MAX_IMAGE_CACHE_COUNT || _cacheSize > Values.MAX_CACHE_WEIGHT {
-                let imageToRemove = cachedImages.last!
-                _cacheSize -= imageToRemove.length
+            if cachedImages.count > Values.MAX_IMAGE_CACHE_COUNT || cacheSize > Values.MAX_CACHE_WEIGHT {
                 cachedImages.removeLast()
             }else{
-                _cacheSize -= cachedImage.length
                 cachedImages.removeAll(where: { $0 == cachedImage })
             }
             cachedImages.insert(cachedImage, at: 0)
-            _cacheSize += cachedImage.length
         }
     }
     
-    func cache(data: Data, url: String) {
+    private func cache(data: Data, url: String) {
         if !FileManager.default.fileExists(atPath: Values.imagesDirectoryPath) {
             do {
                 try FileManager.default.createDirectory(at: URL(fileURLWithPath: Values.imagesDirectoryPath),
@@ -291,7 +285,7 @@ open class ImageLoader {
         }.resume()
     }
 
-    func cachePath(for url: String) -> String {
+    private func cachePath(for url: String) -> String {
         Values.imagesDirectoryPath + "/\((url as NSString).hash)"
     }
 
@@ -304,7 +298,6 @@ open class ImageLoader {
 
     func clearCache() {
         cachedImages.removeAll()
-        _cacheSize = 0
         guard FileManager.default.fileExists(atPath: Values.imagesDirectoryPath) else { return }
         try? FileManager.default.removeItem(atPath: Values.imagesDirectoryPath)
     }
