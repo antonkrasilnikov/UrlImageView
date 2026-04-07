@@ -280,7 +280,7 @@ open class ImageLoader {
     
     func load(url: String, completion: @escaping (Data?) -> Void) {
         guard let URL = URL(string: url) else { completion(nil); return }
-        URLSession.shared.dataTask(with: URLRequest(url: URL)) { (data, _, _) in
+        URLSession.shared.dataTask(with: URLRequest(url: URL, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 60)) { (data, _, _) in
             completion(data)
         }.resume()
     }
