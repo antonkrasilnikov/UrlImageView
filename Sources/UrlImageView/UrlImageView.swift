@@ -5,7 +5,15 @@
 //
 
 import Foundation
+#if os(iOS)
 import UIKit
+public typealias SystemImageView = UIImageView
+public typealias SystemImage = UIImage
+#elseif os(macOS)
+import AppKit
+public typealias SystemImageView = NSImageView
+public typealias SystemImage = NSImage
+#endif
 
 /// remote image render view
 /// ```
@@ -13,10 +21,10 @@ import UIKit
 ///imageView.url = "https://file-examples-com.github.io/uploads/2017/10/file_example_PNG_500kB.png"
 /// ```
 
-public class UrlImageView: UIImageView, ImageLoaderListener {
-    
+public class UrlImageView: SystemImageView, ImageLoaderListener {
+
     /// placeholder image shown in load
-    public var placeholder: UIImage? {
+    public var placeholder: SystemImage? {
         didSet {
             guard image == nil else { return }
             image = placeholder
@@ -49,7 +57,7 @@ public class UrlImageView: UIImageView, ImageLoaderListener {
         }
     }
     
-    public override var image: UIImage? {
+    public override var image: SystemImage? {
         set { super.image = newValue ?? placeholder }
         get { super.image }
     }
@@ -58,7 +66,7 @@ public class UrlImageView: UIImageView, ImageLoaderListener {
         ImageLoader.remove(listener: self)
     }
     
-    public func imageDidLoad(url imageUrl: String, image: UIImage) {
+    public func imageDidLoad(url imageUrl: String, image: SystemImage) {
         ImageLoader.remove(listener: self, url: imageUrl)
         guard imageUrl == url else { return }
         self.image = image

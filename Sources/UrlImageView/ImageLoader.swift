@@ -4,10 +4,14 @@
 //
 
 import Foundation
+#if os(iOS)
 import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 public protocol ImageLoaderListener: AnyObject {
-    func imageDidLoad(url: String, image: UIImage)
+    func imageDidLoad(url: String, image: SystemImage)
     func imageDidFail(url: String)
     func imageDidStartLoading(url: String)
 }
@@ -40,23 +44,23 @@ open class ImageLoader {
     /// - Parameter urls: image's links to load
     /// - Parameter timeout: timeout
     /// - Parameter completion: callback that calls in load completion or timeout
-    open class func load(urls: [String], timeout: TimeInterval? = nil, completion: @escaping ([String:UIImage]) -> Void) {
+    open class func load(urls: [String], timeout: TimeInterval? = nil, completion: @escaping ([String:SystemImage]) -> Void) {
         UrlImageLoader.load(urls: urls, timeout: timeout, completion: completion)
     }
     
     /// get image from RAM cache
     /// - Parameter url: image link
     /// - Returns: image, can be nil
-    open class func cachedImage(url: String) -> UIImage? {
+    open class func cachedImage(url: String) -> SystemImage? {
         loader.cachedImage(for: url)?.image
     }
     
     /// get image from storage cache
     /// - Parameter url: image link
     /// - Returns: image, can be nil
-    open class func loadedImage(url: String) -> UIImage? {
+    open class func loadedImage(url: String) -> SystemImage? {
         guard let data = loader.loadCache(url: url) else { return nil }
-        return UIImage(data: data)
+        return SystemImage(data: data)
     }
 
     /// check if image loaded
@@ -107,10 +111,13 @@ open class ImageLoader {
     private var cacheSize: Int { cachedImages.reduce(0, { $0 + $1.length }) }
 
     init() {
+#if os(iOS)
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(memoryWarningAction),
                                                name: UIApplication.didReceiveMemoryWarningNotification,
                                                object: nil)
+#endif
+
     }
     
     @objc
@@ -198,9 +205,9 @@ open class ImageLoader {
         loadingImages.append(url)
         toLoadImages.removeAll(where: { $0 == url })
 
-        let completion: (Data?, _ precreatedImage: UIImage?) -> Void = { data, precreatedImage in
+        let completion: (Data?, _ precreatedImage: SystemImage?) -> Void = { data, precreatedImage in
             let cachedImage: CachedImage? =
-            if let data, let image = precreatedImage ?? UIImage(data: data) {
+            if let data, let image = precreatedImage ?? SystemImage(data: data) {
                 CachedImage(url: url, image: image, length: data.count)
             }else{
                 nil
@@ -231,7 +238,7 @@ open class ImageLoader {
                 self.load(url: url) { [weak self] data in
                     defer { finishCallback() }
                     guard let self else { return }
-                    guard let data, let image = UIImage(data: data) else {
+                    guard let data, let image = SystemImage(data: data) else {
                         completion(nil,nil)
                         return
                     }

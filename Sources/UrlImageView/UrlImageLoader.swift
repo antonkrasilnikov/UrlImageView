@@ -1,20 +1,24 @@
 import Foundation
+#if os(iOS)
 import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 class UrlImageLoader: NSObject {
 
     private static var _instances: [UrlImageLoader] = []
 
-    class func load(urls: [String], timeout: TimeInterval? = nil, completion: @escaping ([String:UIImage]) -> Void) {
+    class func load(urls: [String], timeout: TimeInterval? = nil, completion: @escaping ([String:SystemImage]) -> Void) {
         let instance = UrlImageLoader()
         _instances.append(instance)
         instance.load(urls: urls, timeout: timeout, completion: completion)
     }
 
-    private var imageDct: [String:UIImage] = [:]
+    private var imageDct: [String:SystemImage] = [:]
     private var failedUrls: [String] = []
     private var urls: [String] = []
-    private var completion: (([String:UIImage]) -> Void)? {
+    private var completion: (([String:SystemImage]) -> Void)? {
         didSet {
             if completion == nil {
                 Self._instances.removeAll(where: { $0 === self })
@@ -28,7 +32,7 @@ class UrlImageLoader: NSObject {
         ImageLoader.remove(listener: self)
     }
 
-    func load(urls: [String], timeout: TimeInterval? = nil, completion: @escaping ([String:UIImage]) -> Void) {
+    func load(urls: [String], timeout: TimeInterval? = nil, completion: @escaping ([String:SystemImage]) -> Void) {
         self.urls = urls
         self.completion = completion
         self.timeout = timeout
@@ -61,8 +65,8 @@ class UrlImageLoader: NSObject {
         timer = nil
     }
 
-    private func loadedImages() -> (Bool, [String:UIImage]) {
-        var dct: [String:UIImage] = [:]
+    private func loadedImages() -> (Bool, [String:SystemImage]) {
+        var dct: [String:SystemImage] = [:]
         var isLoaded = true
         urls.forEach({
             if let image = imageDct[$0] {
@@ -95,7 +99,7 @@ class UrlImageLoader: NSObject {
 }
 
 extension UrlImageLoader: ImageLoaderListener {
-    func imageDidLoad(url: String, image: UIImage) {
+    func imageDidLoad(url: String, image: SystemImage) {
         ImageLoader.remove(listener: self, url: url)
         imageDct[url] = image
         _notifyIfNeeded()

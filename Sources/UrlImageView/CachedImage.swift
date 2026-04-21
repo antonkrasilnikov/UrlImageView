@@ -5,16 +5,20 @@
 //
 
 import Foundation
+#if os(iOS)
 import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 class CachedImage: Equatable {
     
     let url: String
-    var image: UIImage
+    var image: SystemImage
     var length: Int
     
     init(url: String,
-         image: UIImage,
+         image: SystemImage,
          length: Int) {
         self.url = url
         self.image = image
@@ -22,7 +26,7 @@ class CachedImage: Equatable {
     }
 
     init?(url: String, data: Data) {
-        guard let image = UIImage(data: data) else { return nil }
+        guard let image = SystemImage(data: data) else { return nil }
         self.url = url
         self.image = image
         self.length = data.count
