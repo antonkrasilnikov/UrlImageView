@@ -1,9 +1,3 @@
-//
-//  ImageLoadOperation.swift
-//
-//  Created by Антон Красильников on 08.03.2022.
-//
-
 import Foundation
 
 class ImageLoadOperation: Operation, @unchecked Sendable {

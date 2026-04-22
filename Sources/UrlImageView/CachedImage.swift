@@ -1,9 +1,3 @@
-//
-//  CachedImage.swift
-//
-//  Created by Антон Красильников on 08.03.2022.
-//
-
 import Foundation
 #if os(iOS)
 import UIKit

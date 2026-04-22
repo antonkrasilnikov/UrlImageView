@@ -1,8 +1,3 @@
-//
-//  ImageLoader.swift
-//  Created by Антон Красильников on 07.03.2022.
-//
-
 import Foundation
 #if os(iOS)
 import UIKit

@@ -1,18 +1,14 @@
-//
-//  UrlImageView.swift
-//
-//  Created by Антон Красильников on 07.03.2022.
-//
-
 import Foundation
 #if os(iOS)
 import UIKit
 public typealias SystemImageView = UIImageView
 public typealias SystemImage = UIImage
+public typealias SystemView = UIView
 #elseif os(macOS)
 import AppKit
-public typealias SystemImageView = NSImageView
+public typealias SystemImageView = AppKitImageView
 public typealias SystemImage = NSImage
+public typealias SystemView = NSView
 #endif
 
 /// remote image render view
